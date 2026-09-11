@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <title>Uber | Corporate Expenses Database</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        (function() {
+            const theme = localStorage.getItem('uber_theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        :root {
+            --bg-color: #0A0A0A;
+            --text-color: #FFFFFF;
+            --card-bg: #121212;
+            --border-color: #222222;
+            --subtext-color: #888888;
+            --table-header-bg: #181818;
+            --input-bg: #1A1A1A;
+            --btn-bg: #FFFFFF;
+            --btn-text: #000000;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #FFFFFF;
+            --text-color: #000000;
+            --card-bg: #F8F9FA;
+            --border-color: #E2E8F0;
+            --subtext-color: #666666;
+            --table-header-bg: #F1F5F9;
+            --input-bg: #FFFFFF;
+            --btn-bg: #000000;
+            --btn-text: #FFFFFF;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); min-height: 100vh; transition: background 0.2s, color 0.2s; }
+        
+        .navbar { background-color: #000000 !important; color: #FFFFFF !important; padding: 14px 32px; border-bottom: 1px solid #1E1E1E; display: flex; align-items: center; justify-content: space-between; }
+        .brand-container { display: flex; align-items: center; gap: 12px; }
+        .uber-logo { width: 30px; height: 30px; border-radius: 6px; }
+        .brand { font-size: 19px; font-weight: 700; color: #FFFFFF; text-decoration: none; }
+        .brand-sub { font-size: 13px; font-weight: 400; color: #888888; border-left: 1px solid #222222; padding-left: 12px; }
+
+        .nav-actions { display: flex; align-items: center; gap: 10px; }
+        .profile-badge { background: #141414; border: 1px solid #262626; color: #E5E5E5; padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+        .nav-link { color: #A0A0A0; text-decoration: none; padding: 7px 14px; font-size: 13px; font-weight: 500; border-radius: 6px; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { color: #FFFFFF; background-color: #1A1A1A; }
+        .logout-btn { background-color: #1A1A1A; color: #FF4D4D; text-decoration: none; padding: 7px 14px; font-weight: 500; font-size: 13px; border-radius: 6px; border: 1px solid #2A2A2A; }
+        .theme-btn { background: #1A1A1A; border: 1px solid #2A2A2A; color: #FFFFFF; padding: 7px 12px; font-size: 13px; border-radius: 6px; cursor: pointer; }
+
+        .container { max-width: 1100px; margin: 32px auto; padding: 0 20px; }
+        .header-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+        .header-sub { color: var(--subtext-color); font-size: 14px; margin-bottom: 28px; }
+
+        .section-label { font-size: 15px; font-weight: 600; color: var(--text-color); margin-bottom: 12px; }
+        .table-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 32px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        th { background: var(--table-header-bg); color: var(--subtext-color); font-weight: 600; padding: 14px 20px; border-bottom: 1px solid var(--border-color); }
+        td { padding: 16px 20px; border-bottom: 1px solid var(--border-color); color: var(--text-color); }
+
+        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .status-approved { background: #0E3A1E; color: #40C070; border: 1px solid #1B5E33; }
+        .status-pending { background: #3A2E0E; color: #E0A030; border: 1px solid #5E4A1B; }
+        .status-rejected { background: #3A0E0E; color: #E04040; border: 1px solid #5E1B1B; }
+
+        .add-form-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; margin-bottom: 32px; }
+        .form-grid { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 12px; align-items: end; }
+        .form-group label { display: block; font-size: 12px; color: var(--subtext-color); margin-bottom: 6px; }
+        .form-group input, .form-group select { width: 100%; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 10px 12px; border-radius: 6px; font-size: 14px; outline: none; }
+        .btn-add { background: var(--btn-bg); color: var(--btn-text); border: none; padding: 10px 20px; font-weight: 600; font-size: 14px; border-radius: 6px; cursor: pointer; height: 41px; }
+        .btn-delete { background: #261212; color: #FF4D4D; border: 1px solid #552222; padding: 6px 12px; font-size: 12px; font-weight: 500; border-radius: 6px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="brand-container">
+            <svg class="uber-logo" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#000000"/><path d="M 50 15 A 35 35 0 1 0 85 50 A 35 35 0 0 0 50 15 Z" fill="#FFFFFF"/><path d="M 22 50 L 52 50" stroke="#000000" stroke-width="8"/><rect x="46" y="40" width="20" height="20" fill="#000000"/></svg>
+            <span class="brand">Uber</span>
+            <span class="brand-sub">Corporate Travel Policy Assistant</span>
+        </div>
+        <div class="nav-actions">
+            <div class="profile-badge">👤 {{ user.username }}</div>
+            <a href="/" class="nav-link">💬 Chat</a>
+            <a href="/expenses" class="nav-link active">🗄️ Database</a>
+            <a href="/dashboard" class="nav-link">📊 Analytics</a>
+            <button class="theme-btn" onclick="toggleTheme()" id="theme-toggle-btn">☀️ Light</button>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="header-title">Employee & Expense Database</h1>
+        <p class="header-sub">Directly manage live SQLite database entries</p>
+
+        <div class="section-label">👤 Employee Profile</div>
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr><th>Employee ID</th><th>Name</th><th>Department</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>{{ user.username }}</strong></td><td>{{ user.name }}</td><td>{{ user.department }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-label">➕ Add New Expense Entry</div>
+        <div class="add-form-card">
+            <form action="/add_expense" method="POST" class="form-grid">
+                <div class="form-group">
+                    <label>Category</label>
+                    <select name="category" required>
+                        <option value="Meals">Meals</option>
+                        <option value="Rideshare">Rideshare</option>
+                        <option value="Flight">Flight</option>
+                        <option value="Hotel">Hotel</option>
+                        <option value="Airport Transfer">Airport Transfer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Amount ($)</label>
+                    <input type="number" step="0.01" name="amount" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                    <label>Initial Status</label>
+                    <select name="status">
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-add">Add Entry</button>
+            </form>
+        </div>
+
+        <div class="section-label">💳 Expense Claims History</div>
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr><th>ID</th><th>Category</th><th>Amount</th><th>Status</th><th>Date Submitted</th><th style="text-align: right;">Action</th></tr>
+                </thead>
+                <tbody>
+                    {% if expenses %}
+                        {% for expense in expenses %}
+                        <tr>
+                            <td>#{{ expense.id }}</td>
+                            <td><strong>{{ expense.category }}</strong></td>
+                            <td>${{ "%.2f"|format(expense.amount) }}</td>
+                            <td><span class="status-badge status-{{ expense.status.lower() }}">{{ expense.status }}</span></td>
+                            <td>{{ expense.date_submitted.strftime('%Y-%m-%d') }}</td>
+                            <td style="text-align: right;">
+                                <form action="/delete_expense/{{ expense.id }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete record #{{ expense.id }}?');">
+                                    <button type="submit" class="btn-delete">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="6" style="text-align: center; color: #666; padding: 32px;">No expense records found.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function updateThemeUI(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('theme-toggle-btn').textContent = theme === 'dark' ? '🌙 Dark' : '☀️ Light';
+        }
+
+        function toggleTheme() {
+            const current = localStorage.getItem('uber_theme') || 'light';
+            const next = current === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('uber_theme', next);
+            updateThemeUI(next);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            updateThemeUI(localStorage.getItem('uber_theme') || 'light');
+        });
+    </script>
+</body>
+</html>

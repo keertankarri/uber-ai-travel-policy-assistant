@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <title>Uber | Employee Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Inline execution prevents page flicker on load
+        (function() {
+            const theme = localStorage.getItem('uber_theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #111111;
+            --text-color: #FFFFFF;
+            --subtext-color: #888888;
+            --border-color: #222222;
+            --input-bg: #1A1A1A;
+            --btn-bg: #FFFFFF;
+            --btn-text: #000000;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #F4F4F5;
+            --card-bg: #FFFFFF;
+            --text-color: #000000;
+            --subtext-color: #666666;
+            --border-color: #E4E4E7;
+            --input-bg: #F4F4F5;
+            --btn-bg: #000000;
+            --btn-text: #FFFFFF;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; transition: background 0.2s, color 0.2s; }
+        
+        .theme-toggle { position: absolute; top: 20px; right: 20px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .theme-toggle:hover { opacity: 0.8; }
+
+        .login-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 40px; border-radius: 16px; width: 100%; max-width: 420px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+        .brand { font-size: 20px; font-weight: 700; color: var(--text-color); }
+        
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; color: var(--subtext-color); margin-bottom: 8px; }
+        input[type="text"] { width: 100%; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 12px; border-radius: 8px; font-size: 14px; outline: none; }
+        
+        .submit-btn { width: 100%; background: var(--btn-bg); color: var(--btn-text); border: none; padding: 12px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .submit-btn:hover { opacity: 0.9; }
+        .error-msg { color: #FF4D4D; font-size: 13px; margin-bottom: 16px; }
+        .hint-text { font-size: 12px; color: var(--subtext-color); margin-top: 6px; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-icon">☀️</span> <span id="theme-text">Light Mode</span>
+    </button>
+
+    <div class="login-card">
+        <div class="logo-row">
+            <svg width="32" height="32" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#000000"/><path d="M 50 15 A 35 35 0 1 0 85 50 A 35 35 0 0 0 50 15 Z" fill="#FFFFFF"/><path d="M 22 50 L 52 50" stroke="#000000" stroke-width="8"/><rect x="46" y="40" width="20" height="20" fill="#000000"/></svg>
+            <span class="brand">Uber Travel Assistant</span>
+        </div>
+
+        {% if error %}
+            <div class="error-msg">{{ error }}</div>
+        {% endif %}
+
+        <form action="/login" method="POST">
+            <div class="form-group">
+                <label for="username">Enter Employee ID</label>
+                <input type="text" id="username" name="username" placeholder="e.g. UB-101" required autocomplete="off" autofocus>
+                <div class="hint-text">Valid IDs: UB-101, UB-102, UB-103</div>
+            </div>
+            <button type="submit" class="submit-btn">Sign In</button>
+        </form>
+    </div>
+
+    <script>
+        function updateThemeUI(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('theme-icon').textContent = theme === 'dark' ? '🌙' : '☀️';
+            document.getElementById('theme-text').textContent = theme === 'dark' ? 'Dark Mode' : 'Light Mode';
+        }
+
+        function toggleTheme() {
+            const current = localStorage.getItem('uber_theme') || 'light';
+            const next = current === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('uber_theme', next);
+            updateThemeUI(next);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateThemeUI(localStorage.getItem('uber_theme') || 'light');
+        });
+    </script>
+</body>
+</html>

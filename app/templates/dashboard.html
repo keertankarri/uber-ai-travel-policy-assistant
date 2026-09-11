@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <title>Uber | Analytics Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('uber_theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        :root {
+            --bg-color: #0A0A0A;
+            --text-color: #FFFFFF;
+            --card-bg: #121212;
+            --border-color: #222222;
+            --subtext-color: #888888;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #FFFFFF;
+            --text-color: #000000;
+            --card-bg: #F8F9FA;
+            --border-color: #E2E8F0;
+            --subtext-color: #666666;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); min-height: 100vh; transition: background 0.2s, color 0.2s; }
+        
+        .navbar { background-color: #000000 !important; color: #FFFFFF !important; padding: 14px 32px; border-bottom: 1px solid #1E1E1E; display: flex; align-items: center; justify-content: space-between; }
+        .brand-container { display: flex; align-items: center; gap: 12px; }
+        .uber-logo { width: 30px; height: 30px; border-radius: 6px; }
+        .brand { font-size: 19px; font-weight: 700; color: #FFFFFF; text-decoration: none; }
+        .brand-sub { font-size: 13px; font-weight: 400; color: #888888; border-left: 1px solid #222222; padding-left: 12px; }
+
+        .nav-actions { display: flex; align-items: center; gap: 10px; }
+        .profile-badge { background: #141414; border: 1px solid #262626; color: #E5E5E5; padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+        .nav-link { color: #A0A0A0; text-decoration: none; padding: 7px 14px; font-size: 13px; font-weight: 500; border-radius: 6px; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { color: #FFFFFF; background-color: #1A1A1A; }
+        .logout-btn { background-color: #1A1A1A; color: #FF4D4D; text-decoration: none; padding: 7px 14px; font-weight: 500; font-size: 13px; border-radius: 6px; border: 1px solid #2A2A2A; }
+        .theme-btn { background: #1A1A1A; border: 1px solid #2A2A2A; color: #FFFFFF; padding: 7px 12px; font-size: 13px; border-radius: 6px; cursor: pointer; }
+
+        .container { max-width: 1100px; margin: 32px auto; padding: 0 20px; }
+        .header-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+        .header-sub { color: var(--subtext-color); font-size: 14px; margin-bottom: 24px; }
+
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .kpi-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; }
+        .kpi-label { color: var(--subtext-color); font-size: 13px; margin-bottom: 8px; }
+        .kpi-value { font-size: 26px; font-weight: 700; color: var(--text-color); }
+
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
+        .chart-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; height: 350px; display: flex; flex-direction: column; }
+        .chart-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--text-color); }
+        .chart-wrapper { flex: 1; position: relative; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="brand-container">
+            <svg class="uber-logo" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#000000"/><path d="M 50 15 A 35 35 0 1 0 85 50 A 35 35 0 0 0 50 15 Z" fill="#FFFFFF"/><path d="M 22 50 L 52 50" stroke="#000000" stroke-width="8"/><rect x="46" y="40" width="20" height="20" fill="#000000"/></svg>
+            <span class="brand">Uber</span>
+            <span class="brand-sub">Corporate Travel Policy Assistant</span>
+        </div>
+        <div class="nav-actions">
+            <div class="profile-badge">👤 {{ username }}</div>
+            <a href="/" class="nav-link">💬 Chat</a>
+            <a href="/expenses" class="nav-link">🗄️ Database</a>
+            <a href="/dashboard" class="nav-link active">📊 Analytics</a>
+            <button class="theme-btn" onclick="toggleTheme()" id="theme-toggle-btn">☀️ Light</button>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="header-title">Travel Expense Analytics</h1>
+        <p class="header-sub">Spending insights and approval distribution for <strong>{{ user.name }}</strong> ({{ user.department }})</p>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Total Spend</div>
+                <div class="kpi-value">${{ "%.2f"|format(total_spend) }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Approved Claims</div>
+                <div class="kpi-value" style="color: #40C070;">{{ approved_count }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Pending Approval</div>
+                <div class="kpi-value" style="color: #E0A030;">{{ pending_count }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Rejected Claims</div>
+                <div class="kpi-value" style="color: #E04040;">{{ rejected_count }}</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-title">Spend Breakdown by Category</div>
+                <div class="chart-wrapper">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">Claim Approval Statuses</div>
+                <div class="chart-wrapper">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateThemeUI(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('theme-toggle-btn').textContent = theme === 'dark' ? '🌙 Dark' : '☀️ Light';
+        }
+
+        function toggleTheme() {
+            const current = localStorage.getItem('uber_theme') || 'light';
+            const next = current === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('uber_theme', next);
+            updateThemeUI(next);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            updateThemeUI(localStorage.getItem('uber_theme') || 'light');
+        });
+
+        const catCtx = document.getElementById('categoryChart').getContext('2d');
+        new Chart(catCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ categories.keys()|list|tojson }},
+                datasets: [{
+                    data: {{ categories.values()|list|tojson }},
+                    backgroundColor: ['#000000', '#27272A', '#52525B', '#A1A1AA', '#3F3F46'],
+                    borderColor: '#FFFFFF',
+                    borderWidth: 2
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#888' } } } }
+        });
+
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        new Chart(statusCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Approved', 'Pending', 'Rejected'],
+                datasets: [{
+                    data: [{{ approved_count }}, {{ pending_count }}, {{ rejected_count }}],
+                    backgroundColor: ['#1B5E33', '#5E4A1B', '#5E1B1B'],
+                    borderColor: ['#40C070', '#E0A030', '#E04040'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#888' }, grid: { color: '#E2E8F0' } },
+                    y: { ticks: { color: '#888', precision: 0 }, grid: { color: '#E2E8F0' } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
