@@ -1,6 +1,9 @@
 import os
 import sys
 from datetime import datetime
+# Ensure Python can import models.py from app/ and modules from src/
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from models import db, User, Expense, ChatMessage
