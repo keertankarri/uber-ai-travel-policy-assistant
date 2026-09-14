@@ -53,7 +53,7 @@
         .kpi-label { color: var(--subtext-color); font-size: 13px; margin-bottom: 8px; }
         .kpi-value { font-size: 26px; font-weight: 700; color: var(--text-color); }
 
-        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 20px; }
         .chart-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; height: 350px; display: flex; flex-direction: column; }
         .chart-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--text-color); }
         .chart-wrapper { flex: 1; position: relative; }
@@ -77,14 +77,25 @@
     </nav>
 
     <div class="container">
-        <h1 class="header-title">Travel Expense Analytics</h1>
-        <p class="header-sub">Spending insights and approval distribution for <strong>{{ user.name }}</strong> ({{ user.department }})</p>
+        {% if is_admin %}
+            <h1 class="header-title">🏢 Company-Wide Analytics (Admin)</h1>
+            <p class="header-sub">Viewing aggregate data across all departments and employees.</p>
+        {% else %}
+            <h1 class="header-title">✈️ My Travel Dashboard</h1>
+            <p class="header-sub">Welcome back, {{ user.name }} ({{ user.department }}).</p>
+        {% endif %}
 
         <div class="kpi-grid">
             <div class="kpi-card">
                 <div class="kpi-label">Total Spend</div>
                 <div class="kpi-value">${{ "%.2f"|format(total_spend) }}</div>
             </div>
+            {% if is_admin %}
+            <div class="kpi-card">
+                <div class="kpi-label">Total AI Interactions</div>
+                <div class="kpi-value">{{ total_messages }}</div>
+            </div>
+            {% endif %}
             <div class="kpi-card">
                 <div class="kpi-label">Approved Claims</div>
                 <div class="kpi-value" style="color: #40C070;">{{ approved_count }}</div>
@@ -93,10 +104,12 @@
                 <div class="kpi-label">Pending Approval</div>
                 <div class="kpi-value" style="color: #E0A030;">{{ pending_count }}</div>
             </div>
+            {% if not is_admin %}
             <div class="kpi-card">
                 <div class="kpi-label">Rejected Claims</div>
                 <div class="kpi-value" style="color: #E04040;">{{ rejected_count }}</div>
             </div>
+            {% endif %}
         </div>
 
         <div class="charts-grid">
@@ -113,6 +126,25 @@
                 </div>
             </div>
         </div>
+
+        <!-- NEW ADMIN-ONLY CHARTS ROW -->
+        {% if is_admin %}
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-title">Spend by Department</div>
+                <div class="chart-wrapper">
+                    <canvas id="departmentChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">Spending Trend (Timeline)</div>
+                <div class="chart-wrapper">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 
     <script>
@@ -132,6 +164,7 @@
             updateThemeUI(localStorage.getItem('uber_theme') || 'light');
         });
 
+        // 1. Category Chart
         const catCtx = document.getElementById('categoryChart').getContext('2d');
         new Chart(catCtx, {
             type: 'doughnut',
@@ -147,6 +180,7 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#888' } } } }
         });
 
+        // 2. Status Chart
         const statusCtx = document.getElementById('statusChart').getContext('2d');
         new Chart(statusCtx, {
             type: 'bar',
@@ -169,6 +203,51 @@
                 }
             }
         });
+
+        // 3. Admin Only Charts
+        {% if is_admin %}
+            // Department Pie Chart
+            const deptCtx = document.getElementById('departmentChart').getContext('2d');
+            new Chart(deptCtx, {
+                type: 'pie',
+                data: {
+                    labels: {{ department_spend.keys()|list|tojson }},
+                    datasets: [{
+                        data: {{ department_spend.values()|list|tojson }},
+                        backgroundColor: ['#276ef1', '#05a357', '#FFC107', '#e11900', '#9C27B0'],
+                        borderColor: '#FFFFFF',
+                        borderWidth: 2
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#888' } } } }
+            });
+
+            // Timeline Line Chart
+            const timeCtx = document.getElementById('timelineChart').getContext('2d');
+            new Chart(timeCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ time_spend.keys()|list|tojson }},
+                    datasets: [{
+                        label: 'Daily Spend ($)',
+                        data: {{ time_spend.values()|list|tojson }},
+                        borderColor: '#276ef1',
+                        backgroundColor: 'rgba(39, 110, 241, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: '#888' }, grid: { display: false } },
+                        y: { ticks: { color: '#888' }, grid: { color: '#E2E8F0' }, beginAtZero: true }
+                    }
+                }
+            });
+        {% endif %}
     </script>
 </body>
 </html>

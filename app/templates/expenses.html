@@ -92,10 +92,15 @@
     </nav>
 
     <div class="container">
-        <h1 class="header-title">Employee & Expense Database</h1>
-        <p class="header-sub">Directly manage live SQLite database entries</p>
+        {% if is_admin %}
+            <h1 class="header-title">🏢 Company-Wide Expense Database</h1>
+            <p class="header-sub">Manage and view all employee SQLite database entries</p>
+        {% else %}
+            <h1 class="header-title">Employee & Expense Database</h1>
+            <p class="header-sub">Directly manage live SQLite database entries</p>
+        {% endif %}
 
-        <div class="section-label">👤 Employee Profile</div>
+        <div class="section-label">👤 Profile</div>
         <div class="table-card">
             <table>
                 <thead>
@@ -140,13 +145,26 @@
         <div class="table-card">
             <table>
                 <thead>
-                    <tr><th>ID</th><th>Category</th><th>Amount</th><th>Status</th><th>Date Submitted</th><th style="text-align: right;">Action</th></tr>
+                    <tr>
+                        <th>ID</th>
+                        {% if is_admin %}
+                            <th>User ID</th>
+                        {% endif %}
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date Submitted</th>
+                        <th style="text-align: right;">Action</th>
+                    </tr>
                 </thead>
                 <tbody>
                     {% if expenses %}
                         {% for expense in expenses %}
                         <tr>
                             <td>#{{ expense.id }}</td>
+                            {% if is_admin %}
+                                <td>User #{{ expense.user_id }}</td>
+                            {% endif %}
                             <td><strong>{{ expense.category }}</strong></td>
                             <td>${{ "%.2f"|format(expense.amount) }}</td>
                             <td><span class="status-badge status-{{ expense.status.lower() }}">{{ expense.status }}</span></td>
@@ -159,7 +177,11 @@
                         </tr>
                         {% endfor %}
                     {% else %}
-                        <tr><td colspan="6" style="text-align: center; color: #666; padding: 32px;">No expense records found.</td></tr>
+                        <tr>
+                            <td colspan="{% if is_admin %}7{% else %}6{% endif %}" style="text-align: center; color: #666; padding: 32px;">
+                                No expense records found.
+                            </td>
+                        </tr>
                     {% endif %}
                 </tbody>
             </table>
