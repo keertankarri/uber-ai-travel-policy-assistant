@@ -2,7 +2,7 @@
 
 An enterprise-ready AI Travel Assistant built to streamline corporate travel policies and expense tracking. This project features a dual-interface system: an intelligent **Slack Bot** for instant policy resolution and a **Web Dashboard** for financial analytics and expense logging. 
 
-**🚀 Live Deployment:** [Insert Your Railway App URL Here, https://web-production-2c7d2c.up.railway.app/]
+**🚀 Live Deployment:** [https://web-production-2c7d2c.up.railway.app/]
 
 ---
 
