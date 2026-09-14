@@ -1,5 +1,7 @@
 import os
 import sys
+import threading
+import re
 from datetime import datetime
 
 # Ensure Python can import models.py from app/ and modules from src/
@@ -9,6 +11,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 's
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from models import db, User, Expense, ChatMessage
+
+# Import Slack Bolt and Flask adapter
+from slack_bolt import App as SlackApp
+from slack_bolt.adapter.flask import SlackRequestHandler
 
 # Load API key from .env file
 load_dotenv()
@@ -20,6 +26,88 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 
+# ==========================================
+# SLACK BOT CONFIGURATION & EVENT HANDLING
+# ==========================================
+slack_app = SlackApp(
+    token=os.environ.get("SLACK_BOT_TOKEN"),
+    signing_secret=os.environ.get("SLACK_SIGNING_SECRET")
+)
+slack_handler = SlackRequestHandler(slack_app)
+
+# This dictionary acts as the bot's temporary memory mapping Slack IDs to UB-IDs
+slack_user_mapping = {}
+
+@slack_app.event("message")
+@slack_app.event("app_mention")
+def handle_interaction(event, say, client):
+    # Ignore messages from the bot itself or edited/deleted messages
+    if event.get('bot_id') or event.get('subtype') is not None:
+        return
+
+    slack_user_id = event['user']
+    user_text = event.get('text', '')
+
+    # 1. Check if the user is trying to provide an Employee ID (e.g., UB-101 or UB-ADMIN)
+    match = re.search(r'(UB-\d{3}|UB-ADMIN)', user_text.upper())
+    if match:
+        emp_id = match.group(1)
+        with app.app_context():
+            user_exists = User.query.filter_by(username=emp_id).first()
+            if user_exists:
+                # Save the mapping so the bot remembers them
+                slack_user_mapping[slack_user_id] = emp_id
+                say(f"✅ Success! Your chat is now linked to *{user_exists.name}* ({emp_id}). What travel question can I help you with?")
+            else:
+                say(f"❌ I couldn't find '{emp_id}' in the corporate database. Please check your ID and try again.")
+        return
+
+    # 2. If the bot doesn't know this person yet, ask for their ID
+    if slack_user_id not in slack_user_mapping:
+        say("👋 Hello! Before I can pull up your policies and expenses, I need to link your account.\n\nPlease type your Employee ID (e.g., `UB-101` or `UB-ADMIN`).")
+        return
+
+    # 3. If they are already linked, proceed with the normal AI response
+    db_username = slack_user_mapping[slack_user_id]
+    
+    # Send immediate acknowledgment to prevent Slack timeout errors
+    say(f"🤔 Checking policies for {db_username}...")
+
+    # --- BACKGROUND THREAD LOGIC ---
+    def process_message():
+        with app.app_context():
+            user = User.query.filter_by(username=db_username).first()
+            if not user:
+                return
+            
+            try:
+                from agent import run_agent
+                # Trigger the LangGraph Agent
+                ai_response = run_agent(user_text, db_username) 
+                
+                # Save chat history to the database
+                new_chat_user = ChatMessage(user_id=user.id, sender='user', message=user_text)
+                new_chat_bot = ChatMessage(user_id=user.id, sender='bot', message=ai_response)
+                db.session.add_all([new_chat_user, new_chat_bot])
+                db.session.commit()
+                
+                say(ai_response)
+            except Exception as e:
+                print(f"Error in Slack thread: {e}")
+                say(f"⚠️ Sorry, I encountered an error while processing your request: {str(e)}")
+
+    # Start the background thread
+    thread = threading.Thread(target=process_message)
+    thread.start()
+
+# Endpoint for Slack to send Event Webhooks
+@app.route("/slack/events", methods=["POST"])
+def slack_events():
+    return slack_handler.handle(request)
+
+# ==========================================
+# DATABASE SEEDING
+# ==========================================
 def seed_database():
     """Seeds initial valid Employee IDs, names, departments, and sample expenses."""
     with app.app_context():
@@ -56,6 +144,9 @@ def seed_database():
 with app.app_context():
     seed_database()
 
+# ==========================================
+# FLASK WEB DASHBOARD ROUTES
+# ==========================================
 @app.route('/')
 def index():
     if 'username' not in session:
@@ -235,5 +326,6 @@ def dashboard():
         department_spend=department_spend,
         time_spend=time_spend
     )
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
